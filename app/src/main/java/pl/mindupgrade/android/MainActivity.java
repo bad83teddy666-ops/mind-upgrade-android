@@ -263,6 +263,9 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
+        if (MorningAlarm.prefs(this).getBoolean("enabled", false) && MorningAlarm.allowed(this)) {
+            try { MorningAlarm.schedule(this, false); } catch (SecurityException ignored) { }
+        }
         if (web != null) web.onResume();
         Runnable action = resumeAction;
         resumeAction = null;
