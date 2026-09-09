@@ -1,3 +1,33 @@
+# Etap 2 — budzik głosowy (wersja testowa)
+
+Dodano natywny ekran „BUDZIK 6:01”: zgody na powiadomienia i dokładne alarmy,
+test za minutę, codzienny alarm o 6:01 Europe/Warsaw i wyłącznik.
+Budzik jest domyślnie wyłączony. Odtwarza stałą sentencję polskim systemowym
+TTS, z kanałem audio alarmu, bez API AI i bez mikrofonu. Nie uruchamia interfejsu
+na siłę nad ekranem blokady. Rozmowa i integracje pozostają w istniejącym WebView.
+
+## Krótki test użytkownika
+
+1. Instalacja dopiero po wyjaśnieniu ostrzeżenia antywirusa dla konkretnego APK.
+2. Otwórz BUDZIK 6:01 i udziel obu zgód wskazanych na ekranie.
+3. Ustaw głośność alarmów, wybierz Test za minutę, zablokuj ekran.
+4. Potwierdź słyszalne powitanie, działanie STOP, następnie włącz 6:01.
+5. Sprawdź kolejny poranek i restart telefonu. Po restarcie wymagane pierwsze
+   odblokowanie. Wymuszone zatrzymanie blokuje alarmy do ponownego otwarcia.
+
+Alarm używa AlarmManager.setAlarmClock, ponawia następny dzień i odtwarza
+przez krótką usługę mediaPlayback. Ma limit 45 sekund, STOP, zwalnia blokadę
+CPU i audio focus. Brak stałego procesu, nasłuchu Bibi lub automatycznej rozmowy.
+Tryb Nie przeszkadzać, głośność, wybrany silnik TTS i ograniczenia producenta
+wymagają testu na urządzeniu. Nie zmienia głośności ani ustawień DND za użytkownika.
+Wynik zakończenia TTS nie stanowi potwierdzenia, że użytkownik usłyszał dźwięk.
+
+Ostrzeżenie Avasta z poprzedniego APK pozostaje niewyjaśnione. Nowa kompilacja
+nie jest wynikiem skanowania ani dowodem rozwiązania problemu. Nadal podpis debug;
+stały prywatny podpis release i bezpieczne logowanie natywne to osobny etap.
+
+---
+
 # Mind Upgrade Android — etap 1
 
 Wersja testowa istniejącego Mind Upgrade z natywnym rozpoznawaniem wypowiedzi

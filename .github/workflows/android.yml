@@ -2,6 +2,8 @@ name: Android APK
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,7 +26,7 @@ jobs:
       - name: Voice bridge tests
         run: node --test tests/*.test.cjs
       - name: Compile and inspect Android application
-        run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
       - uses: actions/upload-artifact@v4
         with:
           name: Mind-Upgrade-Android-test
