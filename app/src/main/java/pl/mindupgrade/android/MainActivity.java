@@ -68,6 +68,10 @@ public final class MainActivity extends Activity {
         button(bar, "Odśwież", () -> web.reload());
         button(bar, "W Chrome", () -> external(Uri.parse(ORIGIN)));
         root.addView(bar);
+        Button morning = new Button(this);
+        morning.setText("BUDZIK 6:01 · USTAWIENIA I TEST");
+        morning.setOnClickListener(v -> startActivity(new Intent(this, AlarmSettingsActivity.class)));
+        root.addView(morning);
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(6, 13, 22));
         root.addView(web, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
