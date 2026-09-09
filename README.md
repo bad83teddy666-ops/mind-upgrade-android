@@ -81,3 +81,6 @@ usługa mikrofonu uruchamiana jawnie z aplikacji, stałe powiadomienie z STOP,
 przekazywanie mikrofonu do rozmowy i powrót do czuwania. Rozmowa przy blokadzie
 wymaga natywnego klienta sesji/API; nie należy polegać na wykonywaniu JS
 w uśpionym WebView. Brak restartowania nasłuchu bez wiedzy użytkownika.
+
+## Wersja 0.3
+Pakiet `pl.mindupgrade.mobile` instaluje się obok wcześniejszego prototypu; nie usuwa jego danych. Wersja release otwiera aktualną stronę Mind Upgrade i zachowuje moduł głosu oraz budzik. Nie zawiera detektora Bibi. Kompilacja release jest niepodpisana; podpisujemy ją poza CI stałym prywatnym kluczem, którego nie wolno umieszczać w repozytorium.

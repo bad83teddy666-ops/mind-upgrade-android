@@ -12,7 +12,7 @@
         <intent><action android:name="android.speech.RecognitionService" /></intent>
         <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
     </queries>
-    <application android:label="Mind Upgrade" android:theme="@style/AppTheme"
+    <application android:label="Mind Upgrade" android:icon="@drawable/ic_launcher" android:theme="@style/AppTheme"
         android:allowBackup="false" android:usesCleartextTraffic="false">
         <activity android:name=".AlarmSettingsActivity" android:exported="false" />
         <service android:name=".MorningSpeechService" android:exported="false" android:foregroundServiceType="mediaPlayback" />

@@ -56,7 +56,7 @@ public final class MainActivity extends Activity {
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
         status.setPadding(16, 8, 16, 8);
-        status.setText("Mind Upgrade · test Android · Bibi jeszcze nieaktywne");
+        status.setText("Mind Upgrade · 0.3 · Bibi jeszcze nieaktywne");
         root.addView(status);
         LinearLayout bar = new LinearLayout(this);
         button(bar, "Test głosu", () -> {
