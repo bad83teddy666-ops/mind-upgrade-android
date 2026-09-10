@@ -1,8 +1,7 @@
-# Mind Upgrade Android — etap 1
+# Mind Upgrade Android — Bibi 0.2.0
 
-Wersja testowa istniejącego Mind Upgrade z natywnym rozpoznawaniem wypowiedzi
-po naciśnięciu MÓW i odpowiedziami głosowymi Androida. Nie zawiera jeszcze
-wybudzania Bibi ani nasłuchu po zablokowaniu ekranu.
+Wersja testowa istniejącego Mind Upgrade z lokalnym czuwaniem Bibi i rolą
+asystenta Androida. Wymaga sprawdzenia na telefonie zgodnie z instrukcją poniżej.
 
 ## Instalacja
 
@@ -22,7 +21,7 @@ używaniem potrzebny jest stały, prywatny klucz podpisywania.
    we wbudowanej przeglądarce, nie obchodź tego ograniczenia. Zapisz komunikat;
    potrzebna będzie integracja logowania przez systemową przeglądarkę
    i bezpieczne przekazanie sesji po stronie istniejącego serwera.
-5. Zablokuj ekran podczas nagrywania: mikrofon powinien zostać zatrzymany.
+5. Wyjdź z rozmowy: mikrofon rozmowy powinien zostać zwolniony. Jeśli Bibi jest włączone, wraca lokalne czuwanie.
 
 Przycisk **W Chrome** otwiera istniejącą aplikację w przeglądarce. Sesji
 Chrome i WebView nie kopiujemy. Zalogowanie w Chrome nie loguje WebView.
@@ -33,24 +32,16 @@ Most głosowy jest wstrzykiwany wyłącznie do głównej ramki dokładnego origi
 istniejącej aplikacji. Zewnętrzne strony nie mają dostępu do mikrofonu ani TTS
 przez ten most. Brak kluczy, danych użytkownika i sekretów w repozytorium.
 Rozpoznawanie pełnych wypowiedzi korzysta z systemowej usługi Androida, która
-może wysyłać dźwięk do swojego dostawcy. To nie jest lokalny detektor Bibi.
+może wysyłać dźwięk do swojego dostawcy. Lokalne czuwanie Bibi jest osobnym modułem.
 Web Push obecnej PWA nie jest zastąpiony natywnymi powiadomieniami w tym APK.
 
 ## Budowanie
 
 JDK 17, Gradle 8.11.1, Android SDK 35. Polecenie:
-`gradle :app:assembleDebug :app:lintDebug`.
+`python3 scripts/prepare-bibi-model.py`, następnie `gradle :app:assembleDebug :app:lintDebug`.
 Testy mostu: `node --test tests/*.test.cjs`.
 Wymagany aktualny Android System WebView obsługujący dokumentowe skrypty
 startowe i bezpieczne wiadomości z kontrolą originu.
-
-## Następny etap
-
-Po weryfikacji logowania i rozmowy: osobny lokalny detektor słowa Bibi,
-usługa mikrofonu uruchamiana jawnie z aplikacji, stałe powiadomienie z STOP,
-przekazywanie mikrofonu do rozmowy i powrót do czuwania. Rozmowa przy blokadzie
-wymaga natywnego klienta sesji/API; nie należy polegać na wykonywaniu JS
-w uśpionym WebView. Brak restartowania nasłuchu bez wiedzy użytkownika.
 
 ## Bibi — wersja 0.2.0 do testu na telefonie
 
@@ -81,3 +72,8 @@ Kompilacja, lint i testy mostka nie zastępują tych testów.
 Model `vosk-model-small-en-us-0.15` (Apache-2.0):
 https://alphacephei.com/vosk/models — pobierany podczas kompilacji, SHA-256 sprawdzany
 w `scripts/prepare-bibi-model.py`. Biblioteka Vosk: https://github.com/alphacep/vosk-api.
+
+Weryfikacja programowa 2026-09-10: pięć testów mostka przeszło. Model rozpoznał
+syntetyczne polskie „Bibi” jako „bee bee” (oba słowa z confidence 1.0); nie wywołał
+się dla „Dzień dobry”, „Dodaj pięć frezów do listy”, „Zrobię sobie kawę” ani
+„Będzie dobrze”. Mała próba syntetyczna nie mierzy skuteczności w realnym hałasie.

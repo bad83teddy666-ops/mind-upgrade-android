@@ -17,7 +17,7 @@
             <intent-filter><action android:name="android.service.voice.VoiceInteractionService" /></intent-filter>
             <meta-data android:name="android.voice_interaction" android:resource="@xml/bibi_assistant" />
         </service>
-        <service android:name=".BibiRecognitionService" android:exported="true" android:permission="android.permission.BIND_SPEECH_RECOGNITION">
+        <service android:name=".BibiRecognitionService" android:exported="true" android:permission="android.permission.RECORD_AUDIO">
             <intent-filter><action android:name="android.speech.RecognitionService" /></intent-filter>
         </service>
         <service android:name=".BibiSessionService" android:exported="true" android:permission="android.permission.BIND_VOICE_INTERACTION" />

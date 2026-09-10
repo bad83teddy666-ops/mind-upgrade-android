@@ -17,6 +17,7 @@ import java.io.*;
 public final class BibiAssistantService extends VoiceInteractionService {
     static BibiAssistantService instance;
     static boolean activityVisible;
+    static java.util.function.Consumer<String> stateListener;
     private final Handler main = new Handler(Looper.getMainLooper());
     private Model model;
     private Recognizer decoder;
@@ -85,7 +86,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
                         new File(folder, "complete").createNewFile();
                     }
                     Model loaded = new Model(folder.getAbsolutePath());
-                    main.post(() -> { loading = false; if (destroyed) loaded.close(); else { model = loaded; refresh(); } });
+                    main.post(() -> { loading = false; if (destroyed) loaded.close(); else { model = loaded; refresh(); if (stateListener != null) stateListener.accept(state(this)); } });
                 } catch (Exception | LinkageError e) {
                     main.post(() -> { loading = false; if (!destroyed) fail("Nie udało się załadować Bibi. Wyłącz i włącz czuwanie."); });
                 }
@@ -139,6 +140,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
     }
     private void fail(String text) {
         error = text; stopMicrophone();
+        if (stateListener != null) stateListener.accept(text);
         if (foreground) stopForeground(STOP_FOREGROUND_REMOVE);
         foreground = false;
         getSharedPreferences("bibi", 0).edit().putBoolean("enabled", false).apply();

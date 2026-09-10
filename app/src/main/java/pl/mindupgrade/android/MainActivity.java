@@ -53,6 +53,13 @@ public final class MainActivity extends Activity {
             new android.app.AlertDialog.Builder(this).setTitle("Uruchamianie przez Bibi")
                 .setMessage("Wybierz Mind Upgrade jako domyślnego asystenta Androida. Potem wróć i włącz Bibi. Czuwanie używa mikrofonu lokalnie i zwiększa zużycie baterii.")
                 .setPositiveButton("Wybierz asystenta", (dialog, which) -> {
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                        android.app.role.RoleManager roles = getSystemService(android.app.role.RoleManager.class);
+                        if (roles != null && roles.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)) {
+                            startActivityForResult(roles.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT), 102);
+                            return;
+                        }
+                    }
                     startActivity(new Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS));
                 }).setNegativeButton("Anuluj", null).show();
             return;
@@ -330,6 +337,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
+        BibiAssistantService.stateListener = text -> status.setText(text);
         BibiAssistantService.visible(true);
         if (status != null) status.setText(BibiAssistantService.state(this));
         wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
@@ -340,6 +348,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onPause() {
         foreground = false;
+        BibiAssistantService.stateListener = null;
         wakeHandler.removeCallbacks(wakePoll);
         // A runtime permission dialog also pauses the Activity. Preserve only its pending request.
         if (permissionAction == null) cancelRecognition();
