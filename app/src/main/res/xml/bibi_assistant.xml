@@ -1,5 +1,4 @@
 <voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:sessionService="pl.mindupgrade.android.BibiSessionService"
     android:recognitionService="pl.mindupgrade.android.BibiRecognitionService"
-    android:supportsAssist="true"
-    android:supportsLaunchFromKeyguard="false" />
+    android:supportsAssist="true" />
