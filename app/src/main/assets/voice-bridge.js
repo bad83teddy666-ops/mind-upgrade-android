@@ -2,6 +2,19 @@
   'use strict';
   if (window !== window.top || !window.MindNative || window.__mindVoiceInstalled) return;
   window.__mindVoiceInstalled = true;
+  const tracks = new Set();
+  if (navigator.mediaDevices?.getUserMedia) {
+    const capture = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    navigator.mediaDevices.getUserMedia = async constraints => {
+      const stream = await capture(constraints);
+      for (const track of stream.getTracks()) {
+        tracks.add(track);
+        track.addEventListener('ended', () => tracks.delete(track), {once: true});
+      }
+      return stream;
+    };
+  }
+  window.__mindReleaseMicrophone = () => { for (const t of tracks) t.stop(); tracks.clear(); };
   let current = null;
   let sequence = 0;
   const post = data => window.MindNative.postMessage(JSON.stringify(data));

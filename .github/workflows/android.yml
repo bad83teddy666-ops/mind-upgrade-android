@@ -21,6 +21,8 @@ jobs:
           gradle-version: '8.11.1'
       - name: Install Android SDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Bundle verified offline Bibi model
+        run: python3 scripts/prepare-bibi-model.py
       - name: Voice bridge tests
         run: node --test tests/*.test.cjs
       - name: Compile and inspect Android application

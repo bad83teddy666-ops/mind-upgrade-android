@@ -42,9 +42,55 @@ public final class MainActivity extends Activity {
     private boolean test;
     private Runnable permissionAction;
     private Runnable resumeAction;
+    private boolean wakeRequested;
+    private android.webkit.PermissionRequest webPermission;
+    private final android.os.Handler wakeHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private int wakeTries;
+    private final Runnable wakePoll = this::startWakeConversation;
+
+    private void configureBibi() {
+        if (!BibiAssistantService.selected(this)) {
+            new android.app.AlertDialog.Builder(this).setTitle("Uruchamianie przez Bibi")
+                .setMessage("Wybierz Mind Upgrade jako domyślnego asystenta Androida. Potem wróć i włącz Bibi. Czuwanie używa mikrofonu lokalnie i zwiększa zużycie baterii.")
+                .setPositiveButton("Wybierz asystenta", (dialog, which) -> {
+                    startActivity(new Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS));
+                }).setNegativeButton("Anuluj", null).show();
+            return;
+        }
+        if (BibiAssistantService.enabled(this)) {
+            BibiAssistantService.enable(this, false); status.setText("Bibi wyłączone."); return;
+        }
+        withMicrophone(() -> {
+            BibiAssistantService.enable(this, true);
+            status.setText(BibiAssistantService.state(this));
+            if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+        });
+    }
+    private void startWakeConversation() {
+        if (!wakeRequested || !foreground || web == null) return;
+        if (++wakeTries > 40) {
+            wakeRequested = false;
+            status.setText("Bibi otworzyło aplikację. Zaloguj się i naciśnij Włącz rozmowę."); return;
+        }
+        if (trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) {
+            web.evaluateJavascript("(() => { const buttons = [...document.querySelectorAll('button')]; const norm = b => b.textContent.trim().toLocaleUpperCase('pl'); if (buttons.some(b => norm(b) === 'ZAKOŃCZ ROZMOWĘ')) return true; const b = buttons.find(b => norm(b) === 'WŁĄCZ ROZMOWĘ' && !b.disabled); if (!b) return false; b.click(); return true; })()", result -> {
+                if ("true".equals(result)) { wakeRequested = false; status.setText("Bibi · włączam rozmowę…"); }
+                else if (wakeRequested && foreground) wakeHandler.postDelayed(wakePoll, 500);
+            });
+        } else wakeHandler.postDelayed(wakePoll, 500);
+    }
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent); setIntent(intent);
+        if (intent.getBooleanExtra("start_conversation", false)) {
+            wakeRequested = true; wakeTries = 0;
+            wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
+        }
+    }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        wakeRequested = getIntent().getBooleanExtra("start_conversation", false);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.rgb(6, 13, 22));
@@ -56,7 +102,7 @@ public final class MainActivity extends Activity {
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
         status.setPadding(16, 8, 16, 8);
-        status.setText("Mind Upgrade · test Android · Bibi jeszcze nieaktywne");
+        status.setText(BibiAssistantService.state(this));
         root.addView(status);
         LinearLayout bar = new LinearLayout(this);
         button(bar, "Test głosu", () -> {
@@ -65,6 +111,7 @@ public final class MainActivity extends Activity {
             activeId = "test";
             withMicrophone(this::listen);
         });
+        button(bar, "Bibi", this::configureBibi);
         button(bar, "Odśwież", () -> web.reload());
         button(bar, "W Chrome", () -> external(Uri.parse(ORIGIN)));
         root.addView(bar);
@@ -79,7 +126,28 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         CookieManager.getInstance().setAcceptCookie(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        web.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override public void onPermissionRequest(android.webkit.PermissionRequest request) {
+                if (!foreground || !trusted(request.getOrigin()) || !trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) { request.deny(); return; }
+                boolean audio = java.util.Arrays.asList(request.getResources()).contains(android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+                if (!audio) { request.deny(); return; }
+                webPermission = request;
+                withMicrophone(() -> {
+                    if (webPermission == request && foreground && trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) {
+                        request.grant(new String[]{android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                        webPermission = null;
+                    }
+                });
+            }
+            @Override public void onPermissionRequestCanceled(android.webkit.PermissionRequest request) {
+                if (webPermission == request) webPermission = null;
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if (trusted(uri)) return false;
@@ -183,7 +251,10 @@ public final class MainActivity extends Activity {
         if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED && action != null) {
             if (foreground) action.run();
             else resumeAction = action;
-        } else fail("not-allowed", "Zezwól na mikrofon i naciśnij przycisk ponownie.");
+        } else {
+            if (webPermission != null) { webPermission.deny(); webPermission = null; }
+            fail("not-allowed", "Zezwól na mikrofon i naciśnij przycisk ponownie.");
+        }
     }
     private void listen() {
         if (!foreground || activeId == null) return;
@@ -259,6 +330,9 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
+        BibiAssistantService.visible(true);
+        if (status != null) status.setText(BibiAssistantService.state(this));
+        wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
         if (web != null) web.onResume();
         Runnable action = resumeAction;
         resumeAction = null;
@@ -266,6 +340,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onPause() {
         foreground = false;
+        wakeHandler.removeCallbacks(wakePoll);
         // A runtime permission dialog also pauses the Activity. Preserve only its pending request.
         if (permissionAction == null) cancelRecognition();
         if (tts != null) tts.stop();
@@ -274,6 +349,10 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onStop() {
         cancelRecognition();
+        if (web != null && trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) {
+            web.evaluateJavascript("[...document.querySelectorAll('button')].find(b => b.textContent.trim().toLocaleUpperCase('pl') === 'ZAKOŃCZ ROZMOWĘ')?.click(); window.__mindReleaseMicrophone?.();", ignored -> { if (!foreground) BibiAssistantService.visible(false); });
+        }
+        wakeHandler.postDelayed(() -> { if (!foreground) BibiAssistantService.visible(false); }, 1000);
         super.onStop();
     }
     @Override protected void onDestroy() {

@@ -3,11 +3,11 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const script = fs.readFileSync('app/src/main/assets/voice-bridge.js', 'utf8');
-function setup(frame = false) {
+function setup(frame = false, navigator = {}) {
   const sent = [];
   const window = {MindNative: {postMessage: data => sent.push(JSON.parse(data))}};
   window.top = frame ? {} : window;
-  vm.runInNewContext(script, {window, DOMException});
+  vm.runInNewContext(script, {window, DOMException, navigator});
   const receive = data => window.MindNative.onmessage({data: JSON.stringify(data)});
   return {window, sent, receive};
 }
@@ -51,4 +51,15 @@ test('speech and cancellation use structured messages', () => {
   assert.equal(sent[0].text, 'Cześć "Piotrek"');
   assert.equal(sent[0].rate, 0.9);
   assert.equal(sent[1].type, 'silence');
+});
+
+test('releases microphone tracks before background wake detection', async () => {
+  let stops = 0;
+  const track = {stop: () => stops++, addEventListener() {}};
+  const navigator = {mediaDevices: {getUserMedia: async () => ({getTracks: () => [track]})}};
+  const {window} = setup(false, navigator);
+  await navigator.mediaDevices.getUserMedia({audio: true});
+  window.__mindReleaseMicrophone();
+  window.__mindReleaseMicrophone();
+  assert.equal(stops, 1);
 });

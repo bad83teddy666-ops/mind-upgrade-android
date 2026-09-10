@@ -51,3 +51,33 @@ usługa mikrofonu uruchamiana jawnie z aplikacji, stałe powiadomienie z STOP,
 przekazywanie mikrofonu do rozmowy i powrót do czuwania. Rozmowa przy blokadzie
 wymaga natywnego klienta sesji/API; nie należy polegać na wykonywaniu JS
 w uśpionym WebView. Brak restartowania nasłuchu bez wiedzy użytkownika.
+
+## Bibi — wersja 0.2.0 do testu na telefonie
+
+1. Zainstaluj APK z najnowszego zakończonego powodzeniem zadania Android APK.
+2. Otwórz aplikację i zaloguj się do Mind Upgrade.
+3. Naciśnij **Bibi**, wybierz Mind Upgrade w ustawieniach asystenta Androida i wróć.
+4. Naciśnij **Bibi** ponownie, zezwól na mikrofon i powiadomienia. Poczekaj na przygotowanie modelu.
+5. Wyjdź na ekran główny i powiedz **Bibi** (bi-bi). Po otwarciu rozmowy podyktuj polecenie.
+6. Wyłącz czuwanie przyciskiem Bibi lub akcją Wyłącz w powiadomieniu.
+
+Wykrywanie hasła działa lokalnie przez Vosk. Model angielski rozpoznaje fonetyczne
+„bee bee”, odpowiadające wymowie bi-bi. To nie jest model wytrenowany na głosie użytkownika;
+skuteczność oraz fałszywe wywołania trzeba sprawdzić na prawdziwym telefonie.
+Dźwięk czuwania nie jest zapisywany ani wysyłany. Rozmowa po wywołaniu korzysta
+z dotychczasowej internetowej transkrypcji aplikacji.
+
+Czuwanie ma stałe powiadomienie i zużywa baterię. Działa wyłącznie po jego
+włączeniu i wybraniu aplikacji jako asystenta. Android może wymagać odblokowania
+ekranu; aplikacja nie omija blokady. Po wymuszonym zatrzymaniu trzeba otworzyć
+aplikację ponownie. W otwartej aplikacji czuwanie zwalnia mikrofon dla rozmowy;
+po wyjściu wraca. Zwykła wersja w przeglądarce nie otrzymuje czuwania w tle.
+
+Sprawdzenie na urządzeniu przed uznaniem funkcji za gotową: wywołanie z pulpitu,
+wywołanie przy wygaszonym ekranie, odmowa mikrofonu, wyłączenie czuwania,
+kilka kolejnych rozmów, brak fałszywych wywołań podczas normalnej rozmowy i hałasu.
+Kompilacja, lint i testy mostka nie zastępują tych testów.
+
+Model `vosk-model-small-en-us-0.15` (Apache-2.0):
+https://alphacephei.com/vosk/models — pobierany podczas kompilacji, SHA-256 sprawdzany
+w `scripts/prepare-bibi-model.py`. Biblioteka Vosk: https://github.com/alphacep/vosk-api.
