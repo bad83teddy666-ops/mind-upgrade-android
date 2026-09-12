@@ -134,6 +134,9 @@ public final class BibiWakeService extends Service {
             if(!destroyed && p.getLong("last_opened",0)<p.getLong("last_detected",0)) {
                 status="Bibi wykryte, ale Android nie otworzył ekranu. Sprawdź domyślnego asystenta.";
                 notifyState(status);
+                // Existing foreground microphone service retains its permission context.
+                // Re-arm after failed assistant handoff instead of leaving capture stopped.
+                if(p.getBoolean("enabled",false))onStartCommand(new Intent().setAction("START"),0,0);
             }
         },4000);
     }

@@ -14,9 +14,10 @@ public final class BibiHomeActivity extends Activity {
     static boolean visible;
     private TextView status,diagnostic;
     private ProgressBar meter;
-    private boolean pendingStart, waitingPermission, panelOpen, pendingPanel;
+    private boolean pendingStart, waitingPermission, panelOpen, pendingPanel, dismissRequested;
+    private long wakeDeadline;
     private final Handler ui=new Handler(Looper.getMainLooper());
-    private final Runnable poll=new Runnable(){ public void run(){render();if(visible)ui.postDelayed(this,250);} };
+    private final Runnable poll=new Runnable(){ public void run(){render();if(pendingPanel){openIfUnlocked();if(pendingPanel && SystemClock.elapsedRealtime()>wakeDeadline)recoverWake();}if(visible)ui.postDelayed(this,250);} };
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setGravity(android.view.Gravity.CENTER);root.setBackgroundColor(Color.BLACK);
@@ -72,22 +73,37 @@ public final class BibiHomeActivity extends Activity {
     }
     private void wake(Intent i){
         boolean wake=i.getBooleanExtra("bibi_detected",false);setShowWhenLocked(wake);setTurnScreenOn(wake);
-        if(wake){getSharedPreferences("bibi",0).edit().putLong("last_opened",System.currentTimeMillis()).apply();BibiWakeService.status="Usłyszałem Bibi.";pendingPanel=true;}
+        if(wake){dismissRequested=false;wakeDeadline=SystemClock.elapsedRealtime()+30000;getSharedPreferences("bibi",0).edit().putLong("last_opened",System.currentTimeMillis()).apply();BibiWakeService.status="Usłyszałem Bibi.";pendingPanel=true;}
     }
     @Override protected void onNewIntent(Intent i){super.onNewIntent(i);setIntent(i);wake(i);if(visible)openIfUnlocked();}
-    private void openIfUnlocked(){if(pendingPanel&&!getSystemService(KeyguardManager.class).isKeyguardLocked()){pendingPanel=false;openPanel();}}
+    private void openIfUnlocked(){
+        if(!pendingPanel||!visible)return;
+        if(!getSystemService(KeyguardManager.class).isKeyguardLocked()){pendingPanel=false;launchPanel();}
+        else if(!dismissRequested&&hasWindowFocus())openPanel();
+    }
+    private void recoverWake(){
+        pendingPanel=false;dismissRequested=false;
+        if(getSharedPreferences("bibi",0).getBoolean("enabled",false)){pendingStart=true;maybeStart();}
+    }
+    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)openIfUnlocked();}
     private void openPanel(){
         KeyguardManager lock=getSystemService(KeyguardManager.class);
         if(lock.isKeyguardLocked()){
-            lock.requestDismissKeyguard(this,new KeyguardManager.KeyguardDismissCallback(){@Override public void onDismissSucceeded(){pendingPanel=false;launchPanel();}});return;
+            if(dismissRequested)return;dismissRequested=true;
+            lock.requestDismissKeyguard(this,new KeyguardManager.KeyguardDismissCallback(){
+                @Override public void onDismissSucceeded(){dismissRequested=false;pendingPanel=false;launchPanel();}
+                @Override public void onDismissCancelled(){recoverWake();}
+                @Override public void onDismissError(){recoverWake();}
+            });return;
         }
         pendingPanel=false;launchPanel();
     }
     private void launchPanel(){
+        if(panelOpen)return;
         BibiWakeService.pause();panelOpen=true;
         try{new CustomTabsIntent.Builder().setColorScheme(CustomTabsIntent.COLOR_SCHEME_DARK).setShowTitle(true).build()
             .launchUrl(this,Uri.parse("https://kupiec-techniczny-piotr.bad83teddy666.chatgpt.site/"));}
-        catch(ActivityNotFoundException e){panelOpen=false;BibiWakeService.status="Brak przeglądarki. Włącz przeglądarkę w telefonie.";}
+        catch(ActivityNotFoundException e){panelOpen=false;recoverWake();BibiWakeService.status="Brak przeglądarki. Włącz przeglądarkę w telefonie.";}
     }
     @Override protected void onResume(){super.onResume();visible=true;ui.removeCallbacks(poll);ui.post(poll);
         if(panelOpen){panelOpen=false;if(getSharedPreferences("bibi",0).getBoolean("enabled",false))pendingStart=true;}
