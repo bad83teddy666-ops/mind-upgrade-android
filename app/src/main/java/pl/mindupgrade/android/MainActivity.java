@@ -32,6 +32,14 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ORIGIN = "https://kupiec-techniczny-piotr.bad83teddy666.chatgpt.site";
     private WebView web;
+    private android.widget.ProgressBar progress;
+    private LinearLayout recovery;
+    private TextView recoveryText;
+    private boolean pageFailed;
+    private boolean pageLoading;
+    private final Runnable loadTimeout = () -> {
+        if (pageLoading) showRecovery("Ładowanie trwa zbyt długo. Sprawdź internet i spróbuj ponownie.");
+    };
     private TextView status;
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
@@ -100,41 +108,78 @@ public final class MainActivity extends Activity {
         wakeRequested = getIntent().getBooleanExtra("start_conversation", false);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(6, 13, 22));
+        root.setBackgroundColor(Color.BLACK);
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                 insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
+        LinearLayout bar = new LinearLayout(this);
+        bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        TextView title = new TextView(this);
+        title.setText("Mind Upgrade");
+        title.setTextColor(Color.rgb(103, 216, 255));
+        title.setTextSize(16);
+        title.setPadding(dp(16), 0, 0, 0);
+        bar.addView(title, new LinearLayout.LayoutParams(0, dp(48), 1));
+        title.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        Button menu = new Button(this);
+        menu.setText("⋮");
+        menu.setTextColor(Color.rgb(103, 216, 255));
+        menu.setBackgroundColor(Color.TRANSPARENT);
+        menu.setContentDescription("Menu aplikacji: Bibi, odświeżanie i test głosu");
+        menu.setOnClickListener(this::showAppMenu);
+        bar.addView(menu, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        root.addView(bar);
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
-        status.setPadding(16, 8, 16, 8);
+        status.setPadding(dp(16), dp(8), dp(16), dp(8));
         status.setText(BibiAssistantService.state(this));
+        status.setVisibility(android.view.View.GONE);
         root.addView(status);
-        LinearLayout bar = new LinearLayout(this);
-        button(bar, "Test głosu", () -> {
-            cancelRecognition();
-            test = true;
-            activeId = "test";
-            withMicrophone(this::listen);
-        });
-        button(bar, "Bibi", this::configureBibi);
-        button(bar, "Odśwież", () -> web.reload());
-        button(bar, "W Chrome", () -> external(Uri.parse(ORIGIN)));
-        root.addView(bar);
+        progress = new android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(2)));
+        android.widget.FrameLayout content = new android.widget.FrameLayout(this);
+        root.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         web = new WebView(this);
-        web.setBackgroundColor(Color.rgb(6, 13, 22));
-        root.addView(web, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        web.setBackgroundColor(Color.BLACK);
+        content.addView(web, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        recovery = new LinearLayout(this);
+        recovery.setOrientation(LinearLayout.VERTICAL);
+        recovery.setGravity(android.view.Gravity.CENTER);
+        recovery.setPadding(dp(24), dp(24), dp(24), dp(24));
+        recovery.setBackgroundColor(Color.BLACK);
+        recoveryText = new TextView(this);
+        recoveryText.setTextColor(Color.WHITE);
+        recoveryText.setTextSize(18);
+        recoveryText.setGravity(android.view.Gravity.CENTER);
+        recovery.addView(recoveryText);
+        Button retry = new Button(this);
+        retry.setText("Spróbuj ponownie");
+        retry.setOnClickListener(v -> web.loadUrl(ORIGIN));
+        recovery.addView(retry);
+        Button browser = new Button(this);
+        browser.setText("Otwórz Mind Upgrade w przeglądarce");
+        browser.setOnClickListener(v -> external(Uri.parse(ORIGIN)));
+        recovery.addView(browser);
+        content.addView(recovery, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        recovery.setVisibility(android.view.View.GONE);
         setContentView(root);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         CookieManager.getInstance().setAcceptCookie(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         web.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override public void onProgressChanged(WebView view, int value) {
+                progress.setProgress(value);
+                progress.setVisibility(value < 100 && !pageFailed ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
             @Override public void onPermissionRequest(android.webkit.PermissionRequest request) {
                 if (!foreground || !trusted(request.getOrigin()) || !trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) { request.deny(); return; }
                 boolean audio = java.util.Arrays.asList(request.getResources()).contains(android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE);
@@ -153,6 +198,10 @@ public final class MainActivity extends Activity {
         });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
+                pageLoading = false;
+                wakeHandler.removeCallbacks(loadTimeout);
+                CookieManager.getInstance().flush();
+                if (pageFailed) return;
                 wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -162,12 +211,31 @@ public final class MainActivity extends Activity {
                 return true;
             }
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap icon) {
+                pageFailed = false;
+                pageLoading = true;
+                recovery.setVisibility(android.view.View.GONE);
+                status.setVisibility(android.view.View.GONE);
+                progress.setVisibility(android.view.View.VISIBLE);
+                wakeHandler.removeCallbacks(loadTimeout);
+                wakeHandler.postDelayed(loadTimeout, 30000);
                 cancelRecognition();
                 if (tts != null) tts.stop();
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request,
                                                   android.webkit.WebResourceError error) {
-                if (request.isForMainFrame()) status.setText("Nie udało się otworzyć strony. Sprawdź internet i wybierz Odśwież.");
+                if (request.isForMainFrame()) showRecovery("Nie udało się otworzyć Mind Upgrade. Sprawdź połączenie z internetem.");
+            }
+            @Override public void onReceivedHttpError(WebView view, WebResourceRequest request,
+                                                      android.webkit.WebResourceResponse response) {
+                if (!request.isForMainFrame()) return;
+                int code = response.getStatusCode();
+                if (code == 401 || code == 403) {
+                    // Keep the server's sign-in page available; never bypass its access checks.
+                    status.setText("Zaloguj się na stronie poniżej. Logowanie w Chrome nie loguje aplikacji. Jeśli logowanie jest blokowane, użyj menu → Otwórz w przeglądarce.");
+                    status.setVisibility(android.view.View.VISIBLE);
+                } else if (code >= 400) {
+                    showRecovery("Mind Upgrade jest chwilowo niedostępne (" + code + "). Spróbuj ponownie.");
+                }
             }
         });
         tts = new TextToSpeech(this, result -> {
@@ -207,11 +275,47 @@ public final class MainActivity extends Activity {
             && "kupiec-techniczny-piotr.bad83teddy666.chatgpt.site".equals(uri.getHost())
             && (uri.getPort() == -1 || uri.getPort() == 443) && uri.getUserInfo() == null;
     }
-    private void button(LinearLayout parent, String label, Runnable action) {
-        Button button = new Button(this);
-        button.setText(label);
-        button.setOnClickListener(view -> action.run());
-        parent.addView(button, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+    private void showRecovery(String message) {
+        pageFailed = true;
+        pageLoading = false;
+        wakeHandler.removeCallbacks(loadTimeout);
+        progress.setVisibility(android.view.View.GONE);
+        recoveryText.setText(message);
+        recovery.setVisibility(android.view.View.VISIBLE);
+    }
+    private void showAppMenu(android.view.View anchor) {
+        android.widget.PopupMenu menu = new android.widget.PopupMenu(this, anchor);
+        menu.getMenu().add(0, 1, 0, BibiAssistantService.enabled(this) ? "Wyłącz Bibi" : "Włącz Bibi");
+        menu.getMenu().add(0, 2, 1, "Odśwież Mind Upgrade");
+        menu.getMenu().add(0, 3, 2, "Test głosu");
+        menu.getMenu().add(0, 4, 3, "Pokaż / ukryj stan aplikacji");
+        menu.getMenu().add(0, 5, 4, "Otwórz w przeglądarce");
+        menu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1:
+                    status.setVisibility(android.view.View.VISIBLE);
+                    configureBibi(); break;
+                case 2: web.loadUrl(ORIGIN); break;
+                case 3:
+                    status.setVisibility(android.view.View.VISIBLE);
+                    cancelRecognition(); test = true; activeId = "test";
+                    withMicrophone(this::listen); break;
+                case 4:
+                    status.setVisibility(status.getVisibility() == android.view.View.VISIBLE
+                        ? android.view.View.GONE : android.view.View.VISIBLE); break;
+                case 5: external(Uri.parse(ORIGIN)); break;
+                default: return false;
+            }
+            return true;
+        });
+        menu.show();
+    }
+    @Override public void onBackPressed() {
+        if (web != null && web.canGoBack()) web.goBack();
+        else super.onBackPressed();
     }
     private void external(Uri uri) {
         if (!"https".equals(uri.getScheme())) return;
@@ -365,6 +469,7 @@ public final class MainActivity extends Activity {
         super.onStop();
     }
     @Override protected void onDestroy() {
+        wakeHandler.removeCallbacksAndMessages(null);
         cancelRecognition();
         if (tts != null) tts.shutdown();
         if (web != null) web.destroy();
