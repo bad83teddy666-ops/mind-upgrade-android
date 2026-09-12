@@ -1,4 +1,23 @@
-# Mind Upgrade Android — Bibi 0.2.0
+# Mind Upgrade Android — 0.2.1 web test
+
+Wersja Android otwiera istniejący Mind Upgrade w WebView od razu po dotknięciu
+ikony. Bibi nie jest wymagane do uruchomienia aplikacji.
+
+## Zmiany 0.2.1
+
+- Mobilny obszar strony, czarne tło i kompaktowy nagłówek. Dotychczasowy pasek
+  testowy zastępuje menu ⋮: Bibi, odświeżanie, test głosu, stan i przeglądarka.
+- Postęp ładowania, ponowienie po błędzie sieci/serwera i po 30 sekundach oczekiwania.
+- Strona logowania pozostaje dostępna przy HTTP 401/403. Aplikacja wyjaśnia,
+  że sesja Chrome nie jest sesją WebView. Nie omija uwierzytelniania strony.
+- Przycisk systemowy Wstecz wraca w historii strony; zapis ciasteczek po ładowaniu.
+
+Test odbiorczy: otwórz ikoną bez Bibi, zaloguj się, porównaj wygląd z wersją
+webową, zamknij i otwórz ponownie, sprawdź MÓW i odpowiedź głosową.
+Następnie uruchom bez internetu i użyj „Spróbuj ponownie” po odzyskaniu sieci.
+Sprawdź też menu ⋮ oraz przycisk Wstecz. Jeśli logowanie jest blokowane przez
+jego dostawcę, potrzebna jest obsługiwana integracja sesji; zmiana wyglądu tego
+nie naprawia. Nie potwierdzono jeszcze tych testów na fizycznym telefonie.
 
 Wersja testowa istniejącego Mind Upgrade z lokalnym czuwaniem Bibi i rolą
 asystenta Androida. Wymaga sprawdzenia na telefonie zgodnie z instrukcją poniżej.
