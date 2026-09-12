@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -9,10 +10,11 @@
         <intent><action android:name="android.speech.RecognitionService" /></intent>
         <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
     </queries>
-    <application android:label="Mind Upgrade Bibi Test" android:theme="@style/AppTheme"
+    <application android:label="Mind Upgrade" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/AppTheme"
         android:allowBackup="false" android:usesCleartextTraffic="false">
+        <service android:name=".BibiWakeService" android:exported="false" android:foregroundServiceType="microphone" />
         <service android:name=".BibiAssistantService" android:exported="true"
-            android:permission="android.permission.BIND_VOICE_INTERACTION" android:foregroundServiceType="microphone">
+            android:permission="android.permission.BIND_VOICE_INTERACTION">
             <intent-filter><action android:name="android.service.voice.VoiceInteractionService" /></intent-filter>
             <meta-data android:name="android.voice_interaction" android:resource="@xml/bibi_assistant" />
         </service>
@@ -21,7 +23,7 @@
         </service>
         <service android:name=".BibiSessionService" android:exported="true" android:permission="android.permission.BIND_VOICE_INTERACTION" />
         <activity android:name=".MainActivity" android:exported="false" android:launchMode="singleTask" />
-        <activity android:name=".BibiTestActivity" android:exported="true" android:launchMode="singleTask">
+        <activity android:name=".BibiHomeActivity" android:exported="true" android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

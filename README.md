@@ -1,3 +1,35 @@
+# Mind Upgrade 0.4.0 — Bibi + panel
+
+One launcher named Mind Upgrade, package pl.mindupgrade.android, branded icon.
+Uninstall the older prototypes before installing this requested consolidated build.
+
+The microphone is now an explicitly started foreground service, separate from
+Android's assistant binding. Start it from the visible home after granting microphone
+and notifications. The UI shows real PCM input peak and whether AudioRecord started.
+The permission grant is checked again after every resume; a pending request alone
+never starts capture. No ringer/DND changes or recognition beeps.
+
+Choose Mind Upgrade as assistant for background opening. The UI distinguishes
+role holder, selected voice service and ready service binding. A default role alone
+is not claimed to enable background launch. If binding is absent, detection is
+recorded and shown in the foreground notification, without bypassing Android rules.
+
+The Vosk model is bundled; ambient audio is not uploaded or saved. A detected
+phrase releases AudioRecord before starting the assistant activity. A locked phone
+shows the native screen; opening private web content requires ordinary unlock.
+When unlocked the wake opens the canonical web home in a Custom Tab. Start the
+web conversation using its normal controls. Wake capture pauses while the browser
+uses the mic and resumes when returning to the native home if still enabled.
+Force-stop/reboot require opening the app and starting again. No boot receiver.
+
+Validation required on a physical phone: grant/deny microphone, input meter,
+foreground recognition, screen-off wake after 2 minutes, silent mode, locked-screen
+privacy, STOP prevents detections, and repeat after returning from web. Device
+behavior and keyword accuracy cannot be guaranteed by compilation. Debug signing
+still uses a per-run key; no production signing credential has been provisioned.
+
+## Earlier versions (historical)
+
 # Mind Upgrade Bibi Test — 0.3.0
 
 Standalone, local-only wake-word test. Separate application ID avoids replacing
