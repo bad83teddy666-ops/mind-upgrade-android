@@ -1,3 +1,33 @@
+# Mind Upgrade Panel — 0.2.2 browser session test
+
+## Current installation and behavior
+
+Install the APK as **Mind Upgrade Panel**. This test uses a separate application
+ID (`pl.mindupgrade.android.paneltest`) to avoid replacing the previous APK or
+requiring deletion of its settings when debug signing keys differ.
+
+Opening its icon launches the canonical site home in an Android Custom Tab.
+The site and its complete Sites-owned sign-in flow run in the same browser
+session. No OAuth authorization URL is forwarded from WebView, no cookies or
+access tokens are extracted, and no dispatch-owned callback route is replaced.
+If Custom Tabs are unavailable, AndroidX falls back to the default browser.
+The visible browser toolbar is expected; this is not a native authenticated WebView.
+
+If a previous broken callback is displayed, return to the launcher and tap
+**Otwórz Mind Upgrade**, which opens `/` without replaying an OAuth code.
+The platform `/callback` 404 itself is not patched by this Android change.
+
+Voice uses the web application's browser microphone and TTS implementation.
+The old native bridge is not injected into this mode. This test's Bibi remains
+disabled to avoid competing for microphone access. If Bibi is active in the
+previous, separately installed APK, turn it off there before testing web voice.
+
+Acceptance on phone: open icon, complete sign-in in that same tab, check panel,
+close tab and reopen via launcher, verify session persistence, test web voice,
+and verify existing integrations. This has not yet been verified on a phone.
+
+## Previous WebView prototype (0.2.1)
+
 # Mind Upgrade Android — 0.2.1 web test
 
 Wersja Android otwiera istniejący Mind Upgrade w WebView od razu po dotknięciu
