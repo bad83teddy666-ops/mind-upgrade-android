@@ -2,4 +2,4 @@
     android:sessionService="pl.mindupgrade.android.BibiSessionService"
     android:recognitionService="pl.mindupgrade.android.BibiRecognitionService"
     android:supportsAssist="true"
-    android:supportsLaunchFromKeyguard="true" />
+    android:supportsLaunchVoiceAssistFromKeyguard="true" />
