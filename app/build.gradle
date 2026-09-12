@@ -3,11 +3,11 @@ android {
     namespace 'pl.mindupgrade.android'
     compileSdk 35
     defaultConfig {
-        applicationId 'pl.mindupgrade.android.paneltest'
+        applicationId 'pl.mindupgrade.android.bibitest'
         minSdk 28
         targetSdk 35
-        versionCode 4
-        versionName '0.2.2-browser-session-test'
+        versionCode 5
+        versionName '0.3.0-bibi-offline-test'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

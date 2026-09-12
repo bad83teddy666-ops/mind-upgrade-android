@@ -1,3 +1,30 @@
+# Mind Upgrade Bibi Test — 0.3.0
+
+Standalone, local-only wake-word test. Separate application ID avoids replacing
+previous debug APKs. The manifest deliberately has no INTERNET permission.
+The launcher and voice interaction session open BibiTestActivity, not a website.
+
+1. Select **Mind Upgrade Bibi Test** as the Android assistant.
+2. Tap **Włącz nasłuch Bibi**, grant microphone permission and notifications.
+3. Wait for model preparation, then go Home and turn the screen off.
+4. Say bi-bi, then pause. Expect the offline confirmation activity to open.
+5. Repeat three times, including after 2 minutes with the screen off.
+6. Disable via the notification and verify saying Bibi no longer opens the app.
+
+The activity uses showWhenLocked and turnScreenOn, without dismissing keyguard.
+Only a generic test confirmation is displayed above the lock. No private data,
+AI, calendar, web login, or speech response is loaded. Lock-screen launching is
+subject to the device's assistant settings and Android restrictions; a build is
+not proof of success on a physical phone. Test on an actual device is required.
+
+The UI records separate detection count/time and activity-open time, so wake
+recognition can be distinguished from a blocked screen launch. Recognition uses
+the existing bundled Vosk model and confidence threshold; real voice accuracy
+and false triggers remain unverified. Declining microphone must keep it off.
+No automatic reboot start. Force-stop requires reopening and enabling the test.
+
+## Previous prototypes (historical)
+
 # Mind Upgrade Panel — 0.2.2 browser session test
 
 ## Current installation and behavior

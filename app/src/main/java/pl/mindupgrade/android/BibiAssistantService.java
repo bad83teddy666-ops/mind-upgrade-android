@@ -45,6 +45,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
         if (instance == null || !instance.ready) return "Asystent jest uruchamiany. Wróć za chwilę.";
         if (instance.error != null) return instance.error;
         if (instance.loading) return "Przygotowuję Bibi…";
+        if (instance.model == null) return "Przygotowuję model Bibi…";
         return activityVisible ? "Bibi włączone · czuwa po wyjściu z aplikacji." : "Bibi czuwa.";
     }
     @Override public void onReady() { super.onReady(); instance = this; ready = true; refresh(); }
@@ -55,7 +56,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
     private void notification(String text) {
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(new NotificationChannel("bibi", "Czuwanie Bibi", NotificationManager.IMPORTANCE_LOW));
-        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, BibiTestActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent stop = PendingIntent.getService(this, 1, new Intent(this, BibiAssistantService.class).setAction("STOP_BIBI"), PendingIntent.FLAG_IMMUTABLE);
         Notification n = new Notification.Builder(this, "bibi").setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentTitle("Mind Upgrade · Bibi").setContentText(text).setContentIntent(open)
@@ -119,6 +120,9 @@ public final class BibiAssistantService extends VoiceInteractionService {
             JSONArray words = result.optJSONArray("result");
             if (words == null || words.length() != 2) return;
             for (int i=0; i<2; i++) if (words.getJSONObject(i).optDouble("conf", 0) < 0.8) return;
+            getSharedPreferences("bibi", 0).edit()
+                .putLong("last_detected", System.currentTimeMillis())
+                .putInt("detections", getSharedPreferences("bibi", 0).getInt("detections", 0) + 1).apply();
             stopMicrophone();
             Bundle args = new Bundle(); args.putBoolean("bibi", true);
             showSession(args, 0);
@@ -160,7 +164,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
     @Override public void onShutdown() { cleanup(); super.onShutdown(); }
     @Override public void onDestroy() { cleanup(); super.onDestroy(); }
     private void cleanup() {
-        destroyed = true; ready = false; stopMicrophone();
+        destroyed = true; ready = false; main.removeCallbacksAndMessages(null); stopMicrophone();
         if (model != null) { model.close(); model = null; }
         if (foreground) stopForeground(STOP_FOREGROUND_REMOVE);
         if (instance == this) instance = null;
