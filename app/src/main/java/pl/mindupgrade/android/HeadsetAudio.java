@@ -99,8 +99,18 @@ final class HeadsetAudio {
             next.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
             if(!next.setPreferredDevice(selected))throw new IllegalStateException("Nie można wybrać słuchawek.");
             next.setDataSource(clip.getAbsolutePath());
+            next.setVolume(0f,0f);
             next.addOnRoutingChangedListener((AudioRouting.OnRoutingChangedListener)router->{if(player==next && next.isPlaying() && !headset(next.getRoutedDevice()))lost("Dźwięk słuchawek przerwany. Rozmowa zatrzymana.");},handler);
-            next.setOnPreparedListener(p->{if(player!=p)return;if(selected==null){stopPlayback();return;}p.start();event(id,"playing","");});
+            next.setOnPreparedListener(p->{
+                if(player!=p)return;if(selected==null){stopPlayback();return;}p.start();
+                final long deadline=SystemClock.elapsedRealtime()+3000;
+                Runnable verify=new Runnable(){public void run(){
+                    if(player!=p)return;
+                    if(headset(p.getRoutedDevice())){p.setVolume(1f,1f);event(id,"playing","");return;}
+                    if(SystemClock.elapsedRealtime()>=deadline){lost("Nie można potwierdzić dźwięku w słuchawkach.");return;}
+                    handler.postDelayed(this,25);
+                }};verify.run();
+            });
             next.setOnCompletionListener(p->{if(player==p){stopPlayback();event(id,"ended","");}});
             next.setOnErrorListener((p,what,extra)->{if(player==p){stopPlayback();event(id,"error","Nie udało się odtworzyć głosu w słuchawkach.");}return true;});
             next.prepareAsync();
