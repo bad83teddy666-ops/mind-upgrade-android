@@ -1,4 +1,112 @@
-# Mind Upgrade Android — Bibi 0.2.0
+# Mind Upgrade 0.4.0 — Bibi + panel
+
+One launcher named Mind Upgrade, package pl.mindupgrade.android, branded icon.
+Uninstall the older prototypes before installing this requested consolidated build.
+
+The microphone is now an explicitly started foreground service, separate from
+Android's assistant binding. Start it from the visible home after granting microphone
+and notifications. The UI shows real PCM input peak and whether AudioRecord started.
+The permission grant is checked again after every resume; a pending request alone
+never starts capture. No ringer/DND changes or recognition beeps.
+
+Choose Mind Upgrade as assistant for background opening. The UI distinguishes
+role holder, selected voice service and ready service binding. A default role alone
+is not claimed to enable background launch. If binding is absent, detection is
+recorded and shown in the foreground notification, without bypassing Android rules.
+
+The Vosk model is bundled; ambient audio is not uploaded or saved. A detected
+phrase releases AudioRecord before starting the assistant activity. A locked phone
+shows the native screen; opening private web content requires ordinary unlock.
+When unlocked the wake opens the canonical web home in a Custom Tab. Start the
+web conversation using its normal controls. Wake capture pauses while the browser
+uses the mic and resumes when returning to the native home if still enabled.
+Force-stop/reboot require opening the app and starting again. No boot receiver.
+
+Validation required on a physical phone: grant/deny microphone, input meter,
+foreground recognition, screen-off wake after 2 minutes, silent mode, locked-screen
+privacy, STOP prevents detections, and repeat after returning from web. Device
+behavior and keyword accuracy cannot be guaranteed by compilation. Debug signing
+still uses a per-run key; no production signing credential has been provisioned.
+
+## Earlier versions (historical)
+
+# Mind Upgrade Bibi Test — 0.3.0
+
+Standalone, local-only wake-word test. Separate application ID avoids replacing
+previous debug APKs. The manifest deliberately has no INTERNET permission.
+The launcher and voice interaction session open BibiTestActivity, not a website.
+
+1. Select **Mind Upgrade Bibi Test** as the Android assistant.
+2. Tap **Włącz nasłuch Bibi**, grant microphone permission and notifications.
+3. Wait for model preparation, then go Home and turn the screen off.
+4. Say bi-bi, then pause. Expect the offline confirmation activity to open.
+5. Repeat three times, including after 2 minutes with the screen off.
+6. Disable via the notification and verify saying Bibi no longer opens the app.
+
+The activity uses showWhenLocked and turnScreenOn, without dismissing keyguard.
+Only a generic test confirmation is displayed above the lock. No private data,
+AI, calendar, web login, or speech response is loaded. Lock-screen launching is
+subject to the device's assistant settings and Android restrictions; a build is
+not proof of success on a physical phone. Test on an actual device is required.
+
+The UI records separate detection count/time and activity-open time, so wake
+recognition can be distinguished from a blocked screen launch. Recognition uses
+the existing bundled Vosk model and confidence threshold; real voice accuracy
+and false triggers remain unverified. Declining microphone must keep it off.
+No automatic reboot start. Force-stop requires reopening and enabling the test.
+
+## Previous prototypes (historical)
+
+# Mind Upgrade Panel — 0.2.2 browser session test
+
+## Current installation and behavior
+
+Install the APK as **Mind Upgrade Panel**. This test uses a separate application
+ID (`pl.mindupgrade.android.paneltest`) to avoid replacing the previous APK or
+requiring deletion of its settings when debug signing keys differ.
+
+Opening its icon launches the canonical site home in an Android Custom Tab.
+The site and its complete Sites-owned sign-in flow run in the same browser
+session. No OAuth authorization URL is forwarded from WebView, no cookies or
+access tokens are extracted, and no dispatch-owned callback route is replaced.
+If Custom Tabs are unavailable, AndroidX falls back to the default browser.
+The visible browser toolbar is expected; this is not a native authenticated WebView.
+
+If a previous broken callback is displayed, return to the launcher and tap
+**Otwórz Mind Upgrade**, which opens `/` without replaying an OAuth code.
+The platform `/callback` 404 itself is not patched by this Android change.
+
+Voice uses the web application's browser microphone and TTS implementation.
+The old native bridge is not injected into this mode. This test's Bibi remains
+disabled to avoid competing for microphone access. If Bibi is active in the
+previous, separately installed APK, turn it off there before testing web voice.
+
+Acceptance on phone: open icon, complete sign-in in that same tab, check panel,
+close tab and reopen via launcher, verify session persistence, test web voice,
+and verify existing integrations. This has not yet been verified on a phone.
+
+## Previous WebView prototype (0.2.1)
+
+# Mind Upgrade Android — 0.2.1 web test
+
+Wersja Android otwiera istniejący Mind Upgrade w WebView od razu po dotknięciu
+ikony. Bibi nie jest wymagane do uruchomienia aplikacji.
+
+## Zmiany 0.2.1
+
+- Mobilny obszar strony, czarne tło i kompaktowy nagłówek. Dotychczasowy pasek
+  testowy zastępuje menu ⋮: Bibi, odświeżanie, test głosu, stan i przeglądarka.
+- Postęp ładowania, ponowienie po błędzie sieci/serwera i po 30 sekundach oczekiwania.
+- Strona logowania pozostaje dostępna przy HTTP 401/403. Aplikacja wyjaśnia,
+  że sesja Chrome nie jest sesją WebView. Nie omija uwierzytelniania strony.
+- Przycisk systemowy Wstecz wraca w historii strony; zapis ciasteczek po ładowaniu.
+
+Test odbiorczy: otwórz ikoną bez Bibi, zaloguj się, porównaj wygląd z wersją
+webową, zamknij i otwórz ponownie, sprawdź MÓW i odpowiedź głosową.
+Następnie uruchom bez internetu i użyj „Spróbuj ponownie” po odzyskaniu sieci.
+Sprawdź też menu ⋮ oraz przycisk Wstecz. Jeśli logowanie jest blokowane przez
+jego dostawcę, potrzebna jest obsługiwana integracja sesji; zmiana wyglądu tego
+nie naprawia. Nie potwierdzono jeszcze tych testów na fizycznym telefonie.
 
 Wersja testowa istniejącego Mind Upgrade z lokalnym czuwaniem Bibi i rolą
 asystenta Androida. Wymaga sprawdzenia na telefonie zgodnie z instrukcją poniżej.
