@@ -5,9 +5,9 @@ const fs = require('node:fs');
 const script = fs.readFileSync('app/src/main/assets/voice-bridge.js', 'utf8');
 function setup(frame = false, navigator = {}) {
   const sent = [];
-  const window = {MindNative: {postMessage: data => sent.push(JSON.parse(data))}};
+  const window = {dispatchEvent(){}, MindNative: {postMessage: data => sent.push(JSON.parse(data))}};
   window.top = frame ? {} : window;
-  vm.runInNewContext(script, {window, DOMException, navigator});
+  vm.runInNewContext(script, {window, DOMException, navigator, setTimeout, clearTimeout, CustomEvent:class {constructor(type,options){this.type=type;this.detail=options?.detail;}},localStorage:{setItem(){}}});
   const receive = data => window.MindNative.onmessage({data: JSON.stringify(data)});
   return {window, sent, receive};
 }
@@ -57,9 +57,27 @@ test('releases microphone tracks before background wake detection', async () => 
   let stops = 0;
   const track = {stop: () => stops++, addEventListener() {}};
   const navigator = {mediaDevices: {getUserMedia: async () => ({getTracks: () => [track]})}};
-  const {window} = setup(false, navigator);
-  await navigator.mediaDevices.getUserMedia({audio: true});
+  const {window,sent,receive} = setup(false, navigator);
+  const capture=navigator.mediaDevices.getUserMedia({audio:true});
+  receive({type:'audio-state',requestId:sent[0].id,strict:true,ready:true,label:'Headset'});
+  await capture;
   window.__mindReleaseMicrophone();
   window.__mindReleaseMicrophone();
   assert.equal(stops, 1);
+});
+
+
+test('headset route denial never opens the microphone',async()=>{
+  let opened=0;const navigator={mediaDevices:{getUserMedia:async()=>{opened++;}}};
+  const {sent,receive}=setup(false,navigator);
+  const capture=navigator.mediaDevices.getUserMedia({audio:true});
+  receive({type:'audio-state',requestId:sent[0].id,strict:true,ready:false,note:'Połącz słuchawki.'});
+  await assert.rejects(capture,/Połącz słuchawki/);assert.equal(opened,0);
+});
+test('headset loss releases capture and stops native playback',async()=>{
+  let stops=0;const navigator={mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stops++;},addEventListener(){}}]})}};
+  const {window,sent,receive}=setup(false,navigator);const capture=navigator.mediaDevices.getUserMedia({audio:true});
+  receive({type:'audio-state',requestId:sent[0].id,strict:true,ready:true,label:'Headset'});await capture;
+  window.__mindAudioEvent({type:'audio-state',strict:true,ready:false,lost:true});
+  assert.equal(stops,1);assert.equal(sent.at(-1).type,'audio-stop');
 });

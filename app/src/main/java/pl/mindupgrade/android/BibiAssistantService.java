@@ -41,6 +41,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
     static String state(Context c) {
         if (!selected(c)) return "Wybierz Mind Upgrade jako asystenta Androida.";
         if (instance != null && instance.error != null) return instance.error;
+        if (c.getSharedPreferences("mind-audio",0).getBoolean("headset-only",false)) return "Bibi wstrzymane w trybie tylko słuchawki.";
         if (!enabled(c)) return "Bibi wyłączone.";
         if (instance == null || !instance.ready) return "Asystent jest uruchamiany. Wróć za chwilę.";
         if (instance.error != null) return instance.error;
@@ -65,7 +66,7 @@ public final class BibiAssistantService extends VoiceInteractionService {
     private void refresh() {
         if (!ready || destroyed) return;
         stopMicrophone();
-        if (!enabled(this) || !selected(this)) {
+        if (getSharedPreferences("mind-audio",0).getBoolean("headset-only",false) || !enabled(this) || !selected(this)) {
             if (foreground) stopForeground(STOP_FOREGROUND_REMOVE);
             foreground = false; return;
         }
@@ -166,3 +167,4 @@ public final class BibiAssistantService extends VoiceInteractionService {
         if (instance == this) instance = null;
     }
 }
+
