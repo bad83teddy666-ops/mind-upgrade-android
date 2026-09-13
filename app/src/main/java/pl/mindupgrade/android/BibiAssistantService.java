@@ -22,3 +22,4 @@ public final class BibiAssistantService extends VoiceInteractionService {
     @Override public void onShutdown(){if(instance==this)instance=null;super.onShutdown();}
     @Override public void onDestroy(){if(instance==this)instance=null;super.onDestroy();}
 }
+

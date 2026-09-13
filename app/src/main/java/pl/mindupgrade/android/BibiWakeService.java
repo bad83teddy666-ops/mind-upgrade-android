@@ -34,6 +34,7 @@ public final class BibiWakeService extends Service {
     @Override public IBinder onBind(Intent i) { return null; }
     @Override public void onCreate() { super.onCreate(); instance=this; }
     static void start(Context c) {
+        if(c.getSharedPreferences("mind-audio",0).getBoolean("headset-only",false)){status="Bibi wstrzymane w trybie tylko słuchawki.";return;}
         c.startForegroundService(new Intent(c,BibiWakeService.class).setAction("START"));
     }
     static void stop(Context c) {
@@ -49,6 +50,7 @@ public final class BibiWakeService extends Service {
     }
     @Override public int onStartCommand(Intent i,int flags,int id) {
         if (i == null || "STOP".equals(i.getAction())) { stop(this); return START_NOT_STICKY; }
+        if(getSharedPreferences("mind-audio",0).getBoolean("headset-only",false)){cancelCapture();status="Bibi wstrzymane w trybie tylko słuchawki.";stopSelf();return START_NOT_STICKY;}
         try {
             notifyState("Przygotowuję mikrofon i model Bibi…");
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)
@@ -166,3 +168,4 @@ public final class BibiWakeService extends Service {
         if(instance==this)instance=null; stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy();
     }
 }
+

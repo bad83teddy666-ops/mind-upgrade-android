@@ -3,3 +3,4 @@
     android:recognitionService="pl.mindupgrade.android.BibiRecognitionService"
     android:supportsAssist="true"
     android:supportsLaunchVoiceAssistFromKeyguard="true" />
+

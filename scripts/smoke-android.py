@@ -8,7 +8,7 @@ import subprocess
 import time
 import xml.etree.ElementTree as ET
 
-PKG = "pl.mindupgrade.android"
+PKG = "pl.mindupgrade.headsettest"
 OUT = pathlib.Path("test-results")
 OUT.mkdir(exist_ok=True)
 
@@ -44,12 +44,17 @@ def tap(text):
 
 
 try:
-    adb("install", "-r", "app/build/outputs/apk/debug/app-debug.apk")
+    adb("install", "baseline/app-debug.apk")
+    adb("install", "app/build/outputs/apk/debug/app-debug.apk")
+    packages=adb("shell","pm","list","packages")
+    assert "package:pl.mindupgrade.android\n" in packages, packages
+    assert "package:pl.mindupgrade.headsettest\n" in packages, packages
+    print("PASS: previous and headset apps install side by side",flush=True)
     adb("shell", "pm", "grant", PKG, "android.permission.RECORD_AUDIO")
     adb("shell", "pm", "grant", PKG, "android.permission.POST_NOTIFICATIONS")
     # Assign role on disposable emulator only, through the platform role service.
     adb("shell", "cmd", "role", "add-role-holder", "android.app.role.ASSISTANT", PKG)
-    adb("shell", "am", "start", "-n", PKG + "/.BibiHomeActivity")
+    adb("shell", "am", "start", "-n", PKG + "/pl.mindupgrade.android.BibiHomeActivity")
     wait_text("połączenie: gotowe")
     tap("Włącz Bibi")
     wait_text("Mikrofon: AKTYWNY")
@@ -62,7 +67,7 @@ try:
     print("PASS: foreground service survives screen off", flush=True)
     adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
     adb("shell", "wm", "dismiss-keyguard")
-    adb("shell", "am", "start", "-n", PKG + "/.BibiHomeActivity")
+    adb("shell", "am", "start", "-n", PKG + "/pl.mindupgrade.android.BibiHomeActivity")
     wait_text("Mikrofon: AKTYWNY")
     tap("Wyłącz Bibi")
     wait_text("Mikrofon: nie nasłuchuje")
@@ -74,7 +79,7 @@ try:
     # Exercise the activity handoff after wake; this is not acoustic detection.
     adb("shell", "input", "keyevent", "KEYCODE_HOME")
     adb("shell", "input", "keyevent", "KEYCODE_SLEEP")
-    adb("shell", "am", "start", "-n", PKG + "/.BibiHomeActivity", "--ez", "bibi_detected", "true")
+    adb("shell", "am", "start", "-n", PKG + "/pl.mindupgrade.android.BibiHomeActivity", "--ez", "bibi_detected", "true")
     deadline=time.monotonic()+20
     while time.monotonic()<deadline:
         activities=adb("shell","dumpsys","activity","activities")
@@ -88,3 +93,4 @@ finally:
     (OUT / "logcat.txt").write_text(adb("logcat", "-d", "-t", "3000"))
     with (OUT / "screen.png").open("wb") as f:
         subprocess.run(["adb", "exec-out", "screencap", "-p"], stdout=f, timeout=30)
+

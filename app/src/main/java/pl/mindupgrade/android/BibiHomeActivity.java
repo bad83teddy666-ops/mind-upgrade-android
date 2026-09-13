@@ -28,6 +28,7 @@ public final class BibiHomeActivity extends Activity {
         meter=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);meter.setMax(100);meter.setContentDescription("Poziom dźwięku mikrofonu");root.addView(meter,new LinearLayout.LayoutParams(-1,dp(16)));
         diagnostic=new TextView(this);diagnostic.setTextColor(Color.WHITE);diagnostic.setTextSize(15);diagnostic.setPadding(0,p,0,p);root.addView(diagnostic);
         button(root,"Włącz Bibi",()->{pendingStart=true;maybeStart();});
+        button(root,"Rozmowa przez słuchawki",()->{BibiWakeService.pause();startActivity(new Intent(this,MainActivity.class));});
         button(root,"Wyłącz Bibi",()->{pendingStart=false;BibiWakeService.stop(this);render();});
         button(root,"Ustaw jako asystenta",this::chooseAssistant);
         button(root,"Ustawienia asystenta Androida",()->startActivity(new Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS)));
@@ -111,3 +112,4 @@ public final class BibiHomeActivity extends Activity {
     @Override protected void onPause(){visible=false;ui.removeCallbacks(poll);super.onPause();}
     @Override protected void onDestroy(){ui.removeCallbacksAndMessages(null);super.onDestroy();}
 }
+

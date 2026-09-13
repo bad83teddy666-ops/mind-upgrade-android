@@ -32,6 +32,7 @@ import java.util.Set;
 public final class MainActivity extends Activity {
     private static final String ORIGIN = "https://kupiec-techniczny-piotr.bad83teddy666.chatgpt.site";
     private WebView web;
+    private HeadsetAudio headsetAudio;
     private android.widget.ProgressBar progress;
     private LinearLayout recovery;
     private TextView recoveryText;
@@ -207,6 +208,7 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if (trusted(uri)) return false;
+                if(request.isForMainFrame() && "https".equals(uri.getScheme()) && (uri.getPort()==-1 || uri.getPort()==443) && uri.getUserInfo()==null && Set.of("chatgpt.com","auth.openai.com","auth0.openai.com","auth.chatgpt.com").contains(uri.getHost())) return false;
                 if (request.isForMainFrame()) external(uri);
                 return true;
             }
@@ -267,6 +269,7 @@ public final class MainActivity extends Activity {
         } else {
             status.setText("Zaktualizuj Android System WebView, aby używać przycisku MÓW w aplikacji.");
         }
+        headsetAudio = new HeadsetAudio(this, this::emitAudio);
         web.loadUrl(ORIGIN);
     }
 
@@ -293,6 +296,7 @@ public final class MainActivity extends Activity {
         menu.getMenu().add(0, 3, 2, "Test głosu");
         menu.getMenu().add(0, 4, 3, "Pokaż / ukryj stan aplikacji");
         menu.getMenu().add(0, 5, 4, "Otwórz w przeglądarce");
+        menu.getMenu().add(0, 6, 5, "Tylko słuchawki");
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1:
@@ -307,6 +311,7 @@ public final class MainActivity extends Activity {
                     status.setVisibility(status.getVisibility() == android.view.View.VISIBLE
                         ? android.view.View.GONE : android.view.View.VISIBLE); break;
                 case 5: external(Uri.parse(ORIGIN)); break;
+                case 6: headsetAudio.prepare("headset", this::emitAudio); break;
                 default: return false;
             }
             return true;
@@ -322,8 +327,19 @@ public final class MainActivity extends Activity {
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
         catch (android.content.ActivityNotFoundException error) { status.setText("Nie znaleziono przeglądarki."); }
     }
+    private void emitAudio(JSONObject data) {
+        if (web == null || !foreground || !trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) return;
+        web.evaluateJavascript("window.__mindAudioEvent?.(" + data.toString() + ")", null);
+    }
     private void handle(JSONObject message, JavaScriptReplyProxy responder) {
         switch (message.optString("type")) {
+            case "audio-prepare":
+                headsetAudio.prepare(message.optString("mode", "auto"), data -> {
+                    try { data.put("requestId", message.optString("id")); responder.postMessage(data.toString()); } catch (Exception ignored) { }
+                }); break;
+            case "audio-play":
+                headsetAudio.play(message.optString("id"),message.optString("audio")); break;
+            case "audio-stop": headsetAudio.stopPlayback(); break;
             case "listen":
                 cancelRecognition();
                 test = false;
@@ -369,6 +385,7 @@ public final class MainActivity extends Activity {
     }
     private void listen() {
         if (!foreground || activeId == null) return;
+        if (HeadsetAudio.enabled(this)) { fail("audio-capture", "W trybie słuchawek użyj przycisku MÓW w aplikacji."); return; }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             fail("service-not-allowed", "Brak systemowej usługi rozpoznawania mowy."); return;
         }
@@ -408,6 +425,7 @@ public final class MainActivity extends Activity {
         catch (RuntimeException error) { fail("audio-capture", "Nie udało się uruchomić mikrofonu."); }
     }
     private void speak(String text, float rate, float pitch) {
+        if (HeadsetAudio.enabled(this)) { status.setText("W trybie słuchawek użyj głosu Onyx w aplikacji."); return; }
         if (!ttsReady) { status.setText("Polski głos nie jest jeszcze gotowy."); return; }
         tts.setSpeechRate(Math.max(0.5f, Math.min(2, rate)));
         tts.setPitch(Math.max(0.5f, Math.min(2, pitch)));
@@ -466,13 +484,16 @@ public final class MainActivity extends Activity {
             web.evaluateJavascript("[...document.querySelectorAll('button')].find(b => b.textContent.trim().toLocaleUpperCase('pl') === 'ZAKOŃCZ ROZMOWĘ')?.click(); window.__mindReleaseMicrophone?.();", ignored -> { if (!foreground) BibiAssistantService.visible(false); });
         }
         wakeHandler.postDelayed(() -> { if (!foreground) BibiAssistantService.visible(false); }, 1000);
+        if(headsetAudio != null) headsetAudio.release();
         super.onStop();
     }
     @Override protected void onDestroy() {
         wakeHandler.removeCallbacksAndMessages(null);
         cancelRecognition();
         if (tts != null) tts.shutdown();
+        if(headsetAudio != null) headsetAudio.close();
         if (web != null) web.destroy();
         super.onDestroy();
     }
 }
+
