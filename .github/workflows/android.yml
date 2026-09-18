@@ -2,6 +2,7 @@ name: Android APK
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,16 +21,19 @@ jobs:
         with:
           gradle-version: '8.11.1'
       - name: Install Android SDK
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Bundle verified offline Bibi model
         run: python3 scripts/prepare-bibi-model.py
       - name: Voice bridge tests
         run: node --test tests/*.test.cjs
       - name: Compile and inspect Android application
-        run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+        run: gradle --no-daemon :app:assemblePersonalDebug :app:lintPersonalDebug :app:assembleConsumerDebug :app:lintConsumerDebug :app:bundleConsumerRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: Mind-Upgrade-Android-test
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Mind-Upgrade-INTERNAL-UNSIGNED-not-for-Play
+          path: |
+            app/build/outputs/apk/personal/debug/*.apk
+            app/build/outputs/apk/consumer/debug/*.apk
+            app/build/outputs/bundle/consumerRelease/*.aab
           if-no-files-found: error
           retention-days: 30
