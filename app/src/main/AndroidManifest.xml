@@ -1,10 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
     <queries>
         <intent><action android:name="android.speech.RecognitionService" /></intent>
@@ -12,15 +8,6 @@
     </queries>
     <application android:label="Mind Upgrade" android:theme="@style/AppTheme"
         android:allowBackup="false" android:usesCleartextTraffic="false">
-        <service android:name=".BibiAssistantService" android:exported="true"
-            android:permission="android.permission.BIND_VOICE_INTERACTION" android:foregroundServiceType="microphone">
-            <intent-filter><action android:name="android.service.voice.VoiceInteractionService" /></intent-filter>
-            <meta-data android:name="android.voice_interaction" android:resource="@xml/bibi_assistant" />
-        </service>
-        <service android:name=".BibiRecognitionService" android:exported="true" android:permission="android.permission.RECORD_AUDIO">
-            <intent-filter><action android:name="android.speech.RecognitionService" /></intent-filter>
-        </service>
-        <service android:name=".BibiSessionService" android:exported="true" android:permission="android.permission.BIND_VOICE_INTERACTION" />
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -69,7 +69,7 @@ public final class MainActivity extends Activity {
         }
         withMicrophone(() -> {
             BibiAssistantService.enable(this, true);
-            status.setText(BibiAssistantService.state(this));
+            status.setText(BuildConfig.CONSUMER ? "Mind Upgrade · testy kont użytkowników" : BibiAssistantService.state(this));
             if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
         });
@@ -89,7 +89,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent); setIntent(intent);
-        if (intent.getBooleanExtra("start_conversation", false)) {
+        if (!BuildConfig.CONSUMER && intent.getBooleanExtra("start_conversation", false)) {
             wakeRequested = true; wakeTries = 0;
             wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
         }
@@ -97,7 +97,7 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        wakeRequested = getIntent().getBooleanExtra("start_conversation", false);
+        wakeRequested = !BuildConfig.CONSUMER && getIntent().getBooleanExtra("start_conversation", false);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.rgb(6, 13, 22));
@@ -109,7 +109,7 @@ public final class MainActivity extends Activity {
         status = new TextView(this);
         status.setTextColor(Color.WHITE);
         status.setPadding(16, 8, 16, 8);
-        status.setText(BibiAssistantService.state(this));
+        status.setText(BuildConfig.CONSUMER ? "Mind Upgrade · testy kont użytkowników" : BibiAssistantService.state(this));
         root.addView(status);
         LinearLayout bar = new LinearLayout(this);
         button(bar, "Test głosu", () -> {
@@ -118,9 +118,9 @@ public final class MainActivity extends Activity {
             activeId = "test";
             withMicrophone(this::listen);
         });
-        button(bar, "Bibi", this::configureBibi);
+        if (!BuildConfig.CONSUMER) button(bar, "Bibi", this::configureBibi);
         button(bar, "Odśwież", () -> web.reload());
-        button(bar, "W Chrome", () -> external(Uri.parse(ORIGIN)));
+        button(bar, "W Chrome", () -> external(Uri.parse(ORIGIN + BuildConfig.APP_PATH)));
         root.addView(bar);
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(6, 13, 22));
@@ -199,7 +199,7 @@ public final class MainActivity extends Activity {
         } else {
             status.setText("Zaktualizuj Android System WebView, aby używać przycisku MÓW w aplikacji.");
         }
-        web.loadUrl(ORIGIN);
+        web.loadUrl(ORIGIN + BuildConfig.APP_PATH);
     }
 
     private boolean trusted(Uri uri) {
@@ -337,9 +337,9 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
-        BibiAssistantService.stateListener = text -> status.setText(text);
-        BibiAssistantService.visible(true);
-        if (status != null) status.setText(BibiAssistantService.state(this));
+        if (!BuildConfig.CONSUMER) BibiAssistantService.stateListener = text -> status.setText(text);
+        if (!BuildConfig.CONSUMER) BibiAssistantService.visible(true);
+        if (status != null) status.setText(BuildConfig.CONSUMER ? "Mind Upgrade · testy kont użytkowników" : BibiAssistantService.state(this));
         wakeHandler.removeCallbacks(wakePoll); wakeHandler.post(wakePoll);
         if (web != null) web.onResume();
         Runnable action = resumeAction;
@@ -359,9 +359,9 @@ public final class MainActivity extends Activity {
     @Override protected void onStop() {
         cancelRecognition();
         if (web != null && trusted(Uri.parse(web.getUrl() == null ? "" : web.getUrl()))) {
-            web.evaluateJavascript("[...document.querySelectorAll('button')].find(b => b.textContent.trim().toLocaleUpperCase('pl') === 'ZAKOŃCZ ROZMOWĘ')?.click(); window.__mindReleaseMicrophone?.();", ignored -> { if (!foreground) BibiAssistantService.visible(false); });
+            web.evaluateJavascript("[...document.querySelectorAll('button')].find(b => b.textContent.trim().toLocaleUpperCase('pl') === 'ZAKOŃCZ ROZMOWĘ')?.click(); window.__mindReleaseMicrophone?.();", ignored -> { if (!BuildConfig.CONSUMER && !foreground) BibiAssistantService.visible(false); });
         }
-        wakeHandler.postDelayed(() -> { if (!foreground) BibiAssistantService.visible(false); }, 1000);
+        wakeHandler.postDelayed(() -> { if (!BuildConfig.CONSUMER && !foreground) BibiAssistantService.visible(false); }, 1000);
         super.onStop();
     }
     @Override protected void onDestroy() {
