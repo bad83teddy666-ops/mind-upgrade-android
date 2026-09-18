@@ -13,7 +13,7 @@ if not archive.exists():
     urllib.request.urlretrieve('https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip', archive)
 if hashlib.sha256(archive.read_bytes()).hexdigest() != expected:
     raise RuntimeError('Unexpected Bibi model checksum')
-target = root / 'app/src/main/assets/bibi-model'
+target = root / 'app/src/personal/assets/bibi-model'
 target.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(archive) as z:
     for info in z.infolist():

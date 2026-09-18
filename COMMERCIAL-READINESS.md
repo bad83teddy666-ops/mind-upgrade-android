@@ -2,7 +2,7 @@
 
 This branch adds a separate consumer application ID so it cannot replace or inherit the personal application's local data. It targets API 36 and builds an unsigned release AAB plus debug APKs. There are no provider API keys in the package.
 
-Consumer entry point is /beta. The personal app remains on /. Consumer hides Bibi configuration and removes background assistant services and their permissions from the merged manifest. The underlying native libraries remain present and MUST be inspected for 16 KB support before release; no compliance claim is made.
+Consumer entry point is /beta. The personal app remains on /. Consumer hides Bibi configuration and removes background assistant services and their permissions from the merged manifest. Vosk/JNA and the offline model are isolated to the personal flavor. The consumer flavor contains no wake-word engine. Inspect the produced AAB for unexpected native libraries and test on a 16 KB emulator before release.
 
 Release blockers:
 - Consumer backend currently uses Sites sign-in and remains private to its owner. Do not distribute APKs to testers until access is deliberately configured and two real accounts are tested.
